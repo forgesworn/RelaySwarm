@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RelaySwarm browser spike</title>
+<style>
+  body { font-family: ui-monospace, monospace; margin: 1rem; background: #111; color: #ddd; }
+  h1 { font-size: 1rem; }
+  #status { font-weight: bold; padding: .5rem; border-radius: 4px; background: #333; }
+  #status.ok { background: #14532d; }
+  #status.fail { background: #7f1d1d; }
+  pre { white-space: pre-wrap; font-size: .75rem; }
+</style>
+</head>
+<body>
+<h1>RelaySwarm browser spike - native WebRTC + Nostr signalling</h1>
+<div id="status">starting...</div>
+<pre id="log"></pre>
+<script type="module">
+// Feasibility spike: the PoC protocol (kinds 24170/24171) with the browser's
+// native RTCPeerConnection instead of werift. Leecher by default; seeder
+// role for manual two-browser cross-NAT tests. Throwaway measurement code.
+import { finalizeEvent, generateSecretKey, getPublicKey, verifyEvent } from "https://esm.sh/nostr-tools@2.24.1/pure";
+import { sha256 } from "https://esm.sh/@noble/hashes@1.5.0/sha256";
+import { bytesToHex } from "https://esm.sh/@noble/hashes@1.5.0/utils";
+
+const params = new URLSearchParams(location.search);
+const ROLE = params.get("role") || "leecher";
+const SWARM = params.get("swarm") || `browser-${crypto.getRandomValues(new Uint32Array(2)).join("")}`;
+const SIZE = Number(params.get("size") || 2 * 1024 * 1024);
+const AUTO_POST = params.get("post") !== "0";
+const RELAYS = (params.get("relays") || "wss://relay.damus.io,wss://nos.lol,wss://relay.primal.net").split(",");
+const KIND_PRESENCE = 24170;
+const KIND_SIGNAL = 24171;
+const SWARM_TAG = "x";
+const CHUNK = 16 * 1024;
+
+const t0 = Date.now();
+const marks = {};
+const mark = (name) => { marks[name] = Date.now() - t0; };
+const logEl = document.getElementById("log");
+const statusEl = document.getElementById("status");
+const log = (msg) => {
+  logEl.textContent += `[${String(Date.now() - t0).padStart(6)}ms] ${msg}\n`;
+  console.log(msg);
+};
+const setStatus = (text, cls) => { statusEl.textContent = text; statusEl.className = cls || ""; };
+const hashHex = (bytes) => bytesToHex(sha256(bytes));
+
+log(`role=${ROLE} swarm=${SWARM} size=${SIZE} relays=${RELAYS.join(",")}`);
+
+// --- Minimal relay pool ----------------------------------------------------
+const sockets = [];
+const handlers = [];
+const seen = new Set();
+let published = 0;
+await Promise.allSettled(RELAYS.map((url) => new Promise((resolve, reject) => {
+  const ws = new WebSocket(url);
+  const timer = setTimeout(() => { ws.close(); reject(); }, 8000);
+  ws.addEventListener("open", () => { clearTimeout(timer); sockets.push(ws); log(`connected ${url}`); resolve(); });
+  ws.addEventListener("error", () => { clearTimeout(timer); log(`failed ${url}`); reject(); });
+  ws.addEventListener("message", (m) => {
+    let frame; try { frame = JSON.parse(m.data); } catch { return; }
+    if (frame[0] === "EVENT" && frame[2]) {
+      const ev = frame[2];
+      if (seen.has(ev.id)) return;
+      seen.add(ev.id);
+      if (!verifyEvent(ev)) return;
+      for (const h of handlers) h(ev);
+    }
+  });
+})));
+if (!sockets.length) { setStatus("FAIL: no relay reachable", "fail"); throw new Error("no relays"); }
+mark("relaysConnected");
+
+const secret = generateSecretKey();
+const pubkey = getPublicKey(secret);
+const publish = (kind, tags, content) => {
+  const ev = finalizeEvent({ kind, created_at: Math.floor(Date.now() / 1000), tags, content }, secret);
+  published += 1;
+  const frame = JSON.stringify(["EVENT", ev]);
+  for (const ws of sockets) ws.send(frame);
+};
+const sendSignal = (to, payload) => publish(KIND_SIGNAL, [[SWARM_TAG, SWARM], ["p", to]], JSON.stringify(payload));
+const subscribe = () => {
+  const frame = JSON.stringify(["REQ", crypto.getRandomValues(new Uint32Array(1))[0].toString(36), { kinds: [KIND_PRESENCE, KIND_SIGNAL], [`#${SWARM_TAG}`]: [SWARM], since: Math.floor(t0 / 1000) - 1 }]);
+  for (const ws of sockets) ws.send(frame);
+};
+
+// Wait for ICE gathering (non-trickle, like the PoC), capped: browsers have
+// their srflx candidate within a few hundred ms, and mDNS/host stragglers
+// should not delay the offer. Trickle ICE is a deliverable-era optimisation.
+const gathered = (pc) => new Promise((resolve) => {
+  if (pc.iceGatheringState === "complete") return resolve();
+  const cap = setTimeout(resolve, 1200);
+  pc.addEventListener("icegatheringstatechange", () => {
+    if (pc.iceGatheringState === "complete") { clearTimeout(cap); resolve(); }
+  });
+});
+
+async function candidatePair(pc) {
+  try {
+    const stats = await pc.getStats();
+    let pair = null;
+    // Chrome flags the active pair with selected/nominated; Safari does not,
+    // so fall back to the transport's selectedCandidatePairId, then to any
+    // succeeded pair.
+    stats.forEach((r) => {
+      if (r.type === "transport" && r.selectedCandidatePairId) pair = stats.get(r.selectedCandidatePairId) || pair;
+    });
+    if (!pair) stats.forEach((r) => {
+      if (r.type === "candidate-pair" && ((r.selected || r.nominated) && r.state === "succeeded")) pair = r;
+    });
+    if (!pair) stats.forEach((r) => {
+      if (r.type === "candidate-pair" && r.state === "succeeded") pair = r;
+    });
+    if (!pair) return null;
+    const local = stats.get(pair.localCandidateId);
+    const remote = stats.get(pair.remoteCandidateId);
+    return { local: local?.candidateType, remote: remote?.candidateType };
+  } catch { return null; }
+}
+
+async function report(summary) {
+  log(JSON.stringify(summary, null, 2));
+  setStatus(summary.ok ? `VERIFIED: ${summary.segmentBytes} bytes via ${summary.pair ? summary.pair.local + "/" + summary.pair.remote : "?"}` : "FAIL", summary.ok ? "ok" : "fail");
+  if (AUTO_POST) {
+    try { await fetch("/result", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(summary) }); } catch {}
+  }
+}
+
+const ICE = [{ urls: "stun:stun.l.google.com:19302" }];
+
+if (ROLE === "leecher") {
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  pc.addEventListener("iceconnectionstatechange", () => log(`ice: ${pc.iceConnectionState}`));
+  const channel = pc.createDataChannel("segments");
+  channel.binaryType = "arraybuffer";
+  const received = [];
+  let receivedBytes = 0;
+  let meta = null;
+  let dialled = false;
+
+  const timeout = setTimeout(() => report({ ok: false, error: "timed out after 60s", role: ROLE, swarm: SWARM, ua: navigator.userAgent, marks }), 60000);
+
+  channel.addEventListener("open", () => { mark("channelOpen"); log("channel open, requesting segment"); channel.send("want-segment"); });
+  channel.addEventListener("message", async (e) => {
+    if (typeof e.data === "string") {
+      const payload = JSON.parse(e.data);
+      if (payload.type === "meta") { meta = payload; mark("transferStarted"); }
+      else if (payload.type === "eof") {
+        mark("transferComplete");
+        const body = new Uint8Array(receivedBytes);
+        let off = 0;
+        for (const part of received) { body.set(new Uint8Array(part), off); off += part.byteLength; }
+        const hex = hashHex(body);
+        mark("hashed");
+        const ok = meta && body.length === meta.size && hex === meta.sha256;
+        clearTimeout(timeout);
+        report({
+          ok, role: ROLE, swarm: SWARM, ua: navigator.userAgent,
+          segmentBytes: body.length, sha256Verified: ok,
+          signallingMs: marks.channelOpen - marks.seederDiscovered,
+          transferMs: marks.transferComplete - marks.transferStarted,
+          throughputMBps: Number((body.length / 1048576 / ((marks.transferComplete - marks.transferStarted) / 1000)).toFixed(2)),
+          endToEndMs: marks.transferComplete,
+          pair: await candidatePair(pc),
+          eventsPublished: published, marks,
+        });
+      }
+    } else { received.push(e.data); receivedBytes += e.data.byteLength; }
+  });
+
+  handlers.push(async (ev) => {
+    if (ev.pubkey === pubkey) return;
+    const payload = JSON.parse(ev.content);
+    if (ev.kind === KIND_PRESENCE && payload.role === "seeder" && !dialled) {
+      dialled = true;
+      mark("seederDiscovered");
+      log(`seeder ${ev.pubkey.slice(0, 8)} discovered, creating offer`);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await gathered(pc);
+      mark("offerSent");
+      sendSignal(ev.pubkey, { type: "offer", sdp: pc.localDescription.sdp });
+    }
+    if (ev.kind === KIND_SIGNAL && payload.type === "answer") {
+      if (!ev.tags.some(([n, v]) => n === "p" && v === pubkey)) return;
+      mark("answerReceived");
+      log("answer received, connecting");
+      await pc.setRemoteDescription({ type: "answer", sdp: payload.sdp });
+    }
+  });
+  subscribe();
+  setStatus("waiting for seeder presence...");
+} else {
+  // Seeder role, for manual two-browser tests (e.g. laptop vs phone hotspot).
+  const segment = new Uint8Array(SIZE);
+  for (let off = 0; off < SIZE; off += 65536) crypto.getRandomValues(segment.subarray(off, Math.min(off + 65536, SIZE)));
+  const segHash = hashHex(segment);
+  const pcs = new Map();
+  let servedCount = 0;
+  handlers.push(async (ev) => {
+    if (ev.pubkey === pubkey || ev.kind !== KIND_SIGNAL) return;
+    if (!ev.tags.some(([n, v]) => n === "p" && v === pubkey)) return;
+    const payload = JSON.parse(ev.content);
+    if (payload.type !== "offer" || pcs.has(ev.pubkey)) return;
+    log(`offer from ${ev.pubkey.slice(0, 8)}, answering`);
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    pcs.set(ev.pubkey, pc);
+    pc.addEventListener("datachannel", (e) => {
+      const ch = e.channel;
+      ch.binaryType = "arraybuffer";
+      ch.addEventListener("message", (m) => {
+        if (m.data !== "want-segment") return;
+        ch.send(JSON.stringify({ type: "meta", size: segment.length, sha256: segHash }));
+        for (let off = 0; off < segment.length; off += CHUNK) ch.send(segment.subarray(off, Math.min(off + CHUNK, segment.length)));
+        ch.send(JSON.stringify({ type: "eof" }));
+        servedCount += 1;
+        setStatus(`served ${servedCount} leecher(s)`, "ok");
+        log(`served ${ev.pubkey.slice(0, 8)}`);
+      });
+    });
+    await pc.setRemoteDescription({ type: "offer", sdp: payload.sdp });
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await gathered(pc);
+    sendSignal(ev.pubkey, { type: "answer", sdp: pc.localDescription.sdp });
+  });
+  subscribe();
+  publish(KIND_PRESENCE, [[SWARM_TAG, SWARM]], JSON.stringify({ role: "seeder" }));
+  setInterval(() => publish(KIND_PRESENCE, [[SWARM_TAG, SWARM]], JSON.stringify({ role: "seeder" })), 2000);
+  setStatus(`seeding swarm ${SWARM} (${SIZE} bytes) - open ?role=leecher&swarm=${SWARM} elsewhere`);
+  log(`leecher URL param: ?role=leecher&swarm=${SWARM}`);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+{
+  "ok": true,
+  "swarmId": "fanout-b69e77c7c3f0ae0d",
+  "relays": [
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.primal.net"
+  ],
+  "leechers": 10,
+  "segmentBytes": 2097152,
+  "staggerMs": 400,
+  "wallMs": 4895,
+  "seeder": {
+    "transfersServed": 10,
+    "bytesOut": 20971520,
+    "eventsPublished": 13,
+    "relayWrites": 39
+  },
+  "signalling": {
+    "seederEventsPublished": 13,
+    "leecherEventsPublished": 10,
+    "uniqueEventsTotal": 23,
+    "relayWritesTotal": 62
+  },
+  "perLeecher": [
+    {
+      "index": 0,
+      "verified": true,
+      "signallingMs": 630,
+      "transferMs": 297,
+      "throughputMBps": 6.73,
+      "endToEndMs": 1296,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 317,
+        "seederDiscovered": 365,
+        "answerReceived": 842,
+        "channelOpen": 995,
+        "transferStarted": 998,
+        "transferComplete": 1295,
+        "done": 1296
+      }
+    },
+    {
+      "index": 1,
+      "verified": true,
+      "signallingMs": 592,
+      "transferMs": 285,
+      "throughputMBps": 7.02,
+      "endToEndMs": 1184,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 249,
+        "seederDiscovered": 304,
+        "answerReceived": 743,
+        "channelOpen": 896,
+        "transferStarted": 898,
+        "transferComplete": 1183,
+        "done": 1184
+      }
+    },
+    {
+      "index": 2,
+      "verified": true,
+      "signallingMs": 535,
+      "transferMs": 679,
+      "throughputMBps": 2.95,
+      "endToEndMs": 2041,
+      "eventsPublished": 1,
+      "relayWrites": 3,
+      "marks": {
+        "relaysConnected": 760,
+        "seederDiscovered": 824,
+        "answerReceived": 1232,
+        "channelOpen": 1359,
+        "transferStarted": 1361,
+        "transferComplete": 2040,
+        "done": 2041
+      }
+    },
+    {
+      "index": 3,
+      "verified": true,
+      "signallingMs": 550,
+      "transferMs": 705,
+      "throughputMBps": 2.84,
+      "endToEndMs": 1667,
+      "eventsPublished": 1,
+      "relayWrites": 3,
+      "marks": {
+        "relaysConnected": 346,
+        "seederDiscovered": 408,
+        "answerReceived": 834,
+        "channelOpen": 958,
+        "transferStarted": 961,
+        "transferComplete": 1666,
+        "done": 1667
+      }
+    },
+    {
+      "index": 4,
+      "verified": true,
+      "signallingMs": 702,
+      "transferMs": 461,
+      "throughputMBps": 4.34,
+      "endToEndMs": 1666,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 278,
+        "seederDiscovered": 486,
+        "answerReceived": 962,
+        "channelOpen": 1188,
+        "transferStarted": 1203,
+        "transferComplete": 1664,
+        "done": 1666
+      }
+    },
+    {
+      "index": 5,
+      "verified": true,
+      "signallingMs": 617,
+      "transferMs": 1392,
+      "throughputMBps": 1.44,
+      "endToEndMs": 2406,
+      "eventsPublished": 1,
+      "relayWrites": 3,
+      "marks": {
+        "relaysConnected": 251,
+        "seederDiscovered": 392,
+        "answerReceived": 816,
+        "channelOpen": 1009,
+        "transferStarted": 1013,
+        "transferComplete": 2405,
+        "done": 2406
+      }
+    },
+    {
+      "index": 6,
+      "verified": true,
+      "signallingMs": 612,
+      "transferMs": 266,
+      "throughputMBps": 7.52,
+      "endToEndMs": 1320,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 299,
+        "seederDiscovered": 440,
+        "answerReceived": 924,
+        "channelOpen": 1052,
+        "transferStarted": 1053,
+        "transferComplete": 1319,
+        "done": 1320
+      }
+    },
+    {
+      "index": 7,
+      "verified": true,
+      "signallingMs": 516,
+      "transferMs": 232,
+      "throughputMBps": 8.62,
+      "endToEndMs": 1238,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 331,
+        "seederDiscovered": 485,
+        "answerReceived": 871,
+        "channelOpen": 1001,
+        "transferStarted": 1005,
+        "transferComplete": 1237,
+        "done": 1238
+      }
+    },
+    {
+      "index": 8,
+      "verified": true,
+      "signallingMs": 476,
+      "transferMs": 293,
+      "throughputMBps": 6.83,
+      "endToEndMs": 1190,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 240,
+        "seederDiscovered": 419,
+        "answerReceived": 778,
+        "channelOpen": 895,
+        "transferStarted": 896,
+        "transferComplete": 1189,
+        "done": 1190
+      }
+    },
+    {
+      "index": 9,
+      "verified": true,
+      "signallingMs": 484,
+      "transferMs": 228,
+      "throughputMBps": 8.77,
+      "endToEndMs": 1268,
+      "eventsPublished": 1,
+      "relayWrites": 2,
+      "marks": {
+        "relaysConnected": 255,
+        "seederDiscovered": 553,
+        "answerReceived": 906,
+        "channelOpen": 1037,
+        "transferStarted": 1038,
+        "transferComplete": 1266,
+        "done": 1268
+      }
+    }
+  ],
+  "failures": [],
+  "aggregate": {
+    "succeeded": 10,
+    "avgSignallingMs": 571,
+    "avgTransferMs": 484,
+    "avgThroughputMBps": 5.71,
+    "aggregateSeederMBps": 4.09
+  }
+}

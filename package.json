@@ -1,0 +1,28 @@
+{
+  "name": "relayswarm",
+  "version": "0.1.0",
+  "description": "Peer-assisted HLS distribution with WebRTC signalling over Nostr relays - proof of concept",
+  "scripts": {
+    "poc": "node poc.mjs",
+    "test": "node test/e2e.mjs",
+    "check": "for f in poc.mjs test/e2e.mjs spikes/*.mjs; do node --check $f || exit 1; done && echo syntax OK"
+  },
+  "keywords": [
+    "nostr",
+    "webrtc",
+    "hls",
+    "p2p",
+    "live-streaming",
+    "peer-assisted"
+  ],
+  "author": "ForgeSworn",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "nostr-tools": "^2.24.1",
+    "werift": "^0.24.3"
+  }
+}
