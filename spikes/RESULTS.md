@@ -1,8 +1,9 @@
 # Feasibility spike results
 
 Measurements taken 10 August 2026 with the code in this directory. These
-spikes are deliberately throwaway: star topology, push-to-all, no
-scheduling, no hls.js. They exist to answer "will this actually work"
+spikes are deliberately throwaway: push-to-all, no
+scheduling, no hls.js. Star topology everywhere except the chain
+redistribution run (`redistribute.mjs`). They exist to answer "will this actually work"
 before the real engine is built, and each one either passed or taught a
 design decision. All transfers are SHA-256 verified end to end - a
 transport check against the hash the sending peer supplied, which catches
@@ -25,6 +26,7 @@ public relays. Every spike reproduces against relays of your choosing with
 | Fan-out, 10 leechers | 1 seeder, 2MB each, 400ms stagger, public relays (receipt in `spikes/results/`) | 10/10 verified, avg signalling 571ms, wall 4.9s; the whole swarm's signalling bill was **23 unique signed events** (3 presence + 10 offers + 10 answers, 62 relay writes) to move 20MB |
 | Fan-out via a single relay | Same test, one relay instead of three (self-hosted, author-operated) | 5/5 verified, avg signalling 956ms - a stream naming one swarm relay is viable |
 | Sustained cadence | 2MB every 4s for 5 minutes to 3 leechers (a simulated 4Mbps live stream) | 225/225 segments verified, **100% deadline hit rate**, transfer p50 570ms / p95 917ms / max 1.9s |
+| Leecher-becomes-seeder (`redistribute.mjs`, 11 Aug) | Chain origin -> A -> B; the origin announces only until A is served and then falls silent, so B's copy provably cannot come from it (receipt in `spikes/results/`) | Two runs, both pass: A's copy verified from the origin, **B's copy verified from A**, 8 signed events for the whole two-hop chain, hop signalling 290-422ms. Redistribution - the "viewers are the CDN" claim - is demonstrated, not just designed |
 
 ## Real browsers (`browser-peer.html` + `seeder.mjs`)
 
@@ -88,5 +90,5 @@ flowchart LR
   1.2s); trickle ICE is a deliverable-era optimisation that removes it.
 
 Reproduce any of it: `node spikes/fanout.mjs`, `node spikes/cadence.mjs`,
-or `node spikes/run-browser-test.mjs` (macOS) against relays of your
-choosing with `--relay`.
+`node spikes/redistribute.mjs`, or `node spikes/run-browser-test.mjs`
+(macOS) against relays of your choosing with `--relay`.

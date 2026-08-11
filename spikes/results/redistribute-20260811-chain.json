@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "swarmId": "redist-0af5891842e135ff",
+  "relays": [
+    "wss://relay.trotters.cc"
+  ],
+  "segmentBytes": 2097152,
+  "chain": "origin -> A -> B",
+  "hop1": {
+    "servedByOrigin": true,
+    "signallingMs": 316,
+    "transferMs": 322,
+    "endToEndMs": 2687
+  },
+  "hop2": {
+    "servedByA": true,
+    "servedByOrigin": false,
+    "originSilentDuringHop2": true,
+    "signallingMs": 290,
+    "transferMs": 294,
+    "endToEndMs": 2631
+  },
+  "eventsPublished": 8
+}

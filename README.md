@@ -5,8 +5,9 @@ signalling run over **Nostr relays** instead of a dedicated tracker.
 
 Browser peer-assist needs rendezvous infrastructure; peers cannot find each
 other from nothing. Widely deployed systems get it from WebTorrent-compatible
-trackers - P2P Media Loader and PeerTube do
-([their FAQ](https://github.com/Novage/p2p-media-loader/blob/main/FAQ.md#what-is-tracker)) -
+trackers - P2P Media Loader, the engine PeerTube embeds, gets its peer
+introductions there
+([its FAQ](https://github.com/Novage/p2p-media-loader/blob/main/FAQ.md#what-is-tracker)) -
 a dedicated, application-specific service somebody operates:
 
 ```mermaid
@@ -137,7 +138,8 @@ per-phase timings and throughput. A real run, verbatim:
 harder, with full results in [`spikes/RESULTS.md`](spikes/RESULTS.md):
 one seeder serving 10 simultaneous leechers (23 signed events for the whole
 swarm's signalling), a sustained 4Mbps live cadence with a 100% deadline hit rate over
-five minutes, real Chrome and Safari peers, browser-to-browser transfer
+five minutes, a leecher re-serving its verified segment to a third peer with
+the origin silent (redistribution, not just fan-out), real Chrome and Safari peers, browser-to-browser transfer
 with no server-side peer, cross-NAT with STUN alone (srflx/srflx), and the
 two failure modes that shaped the design: symmetric NAT at VPN egresses
 (hence a super-peer strategy rather than TURN) and background-tab timer

@@ -50,7 +50,7 @@ there is no dedicated tracker and no TURN by default. The origin remains
 central - the swarm distributes egress, not ingest - and the README says so
 plainly.
 
-**What if the state blocks the relays themselves?** Relays are
+**What if a state blocks the relays themselves?** Relays are
 stream-named, so the streamer picks relays their audience can reach,
 including their own. A hostile relay can drop the swarm kinds, but only for
 streams that chose it; if every named relay is blocked, the swarm is gone and
@@ -62,7 +62,7 @@ gone and viewers fall back to plain HLS; the floor is today's behaviour.
 This is a real adversary capability - Russia has filtered Snowflake's DTLS
 handshake, most recently from March 2026
 ([net4people/bbs #603](https://github.com/net4people/bbs/issues/603)).
-Fingerprint resistance is future work, not quietly claimed. The commoner
+Fingerprint resistance is future work, not quietly claimed. The more common
 adversary is throttling a faraway origin. Where domestic WebRTC connectivity
 remains usable, local peer reuse can reduce traffic across that bottleneck.
 
@@ -72,9 +72,8 @@ address and join timing, under one operator. A generic public STUN server
 sees an IP, a timestamp and the usual protocol attributes; it receives no
 stream identifier and no media or signalling traffic, so it cannot tell
 which stream (or that a stream) is involved. The decentralised answer is
-stream-named STUN, a deployment
-guide that ships coturn, and super-peers that make STUN unnecessary where
-they are reachable.
+stream-named STUN, a deployment guide that ships coturn, and super-peers that
+make STUN unnecessary where they are reachable.
 
 **Can a hostile peer poison or flood the swarm?** Wrong bytes fail the
 origin-authenticated digest and are refetched from origin, so poisoning
