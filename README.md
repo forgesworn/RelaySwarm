@@ -213,8 +213,8 @@ questions first.
 ## Why
 
 Live video is the least sovereign layer of the otherwise decentralised Nostr
-stack: the events, chat and payments are censorship-resistant, but the pixels
-still flow from one HTTP origin that can be overwhelmed or cut. Peer
+stack: the events, chat and payments are censorship-resistant, but the video
+itself still flows from one HTTP origin that can be overwhelmed or cut. Peer
 assistance inverts that - the bigger the audience, the more distribution
 capacity the stream has, and the origin only feeds the swarm's edge.
 
